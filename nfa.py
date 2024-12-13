@@ -44,85 +44,47 @@ class NFA:
             print(x)
     
     def dfs(self, curr, left):
-    # Track visited states to prevent infinite loops with epsilon transitions
         visited = set()
-
         def explore(state, remaining_input):
-            # If we've already visited this state, stop to prevent infinite loops
+            if remaining_input:
+                print(f'Current state: {state}, remaining input: {remaining_input}')
+            else:
+                print(f"Current state: {state}, no more input to check")
             if state in visited:
                 return False
             visited.add(state)
-
-            # If no input is left, check if we're in a final state
             if not remaining_input:
                 if state in self.final_states:
                     return True
-                
-                # Try epsilon transitions if no input left
                 if "~" in self.transitions.get(state, {}):
                     for next_state in self.transitions[state]["~"]:
                         if explore(next_state, remaining_input):
                             return True
                 return False
-
             curr_sym = remaining_input[0]
             everything_else = remaining_input[1:]
-
-            # First, try all possible epsilon transitions without consuming input
             if "~" in self.transitions.get(state, {}):
                 for next_state in self.transitions[state]["~"]:
                     if explore(next_state, remaining_input):
                         return True
-
-            # Then try transitions with the current symbol
             if curr_sym in self.transitions.get(state, {}):
                 for next_state in self.transitions[state][curr_sym]:
                     if explore(next_state, everything_else):
                         return True
-
             return False
-
-        # Start exploring from the initial state
         return explore(curr, left)
 
 
-
-    
     def accept(self, w: str):
         return self.dfs(self.start_state, w)
     
 
-    
-    def to_automathon(self):
-        # Convert states, symbols, transitions, start state, and final states into Automathon format
-        q = self.states  # Set of states
-        sigma = self.symbols  # Set of input symbols
-        delta = {}  # Transition dictionary
-
-        # Convert transitions to Automathon format
-        for state, transitions in self.transitions.items():
-            for symbol, next_states in transitions.items():
-                for next_state in next_states:
-                    if (state, symbol) not in delta:
-                        delta[(state, symbol)] = set()
-                    delta[(state, symbol)].add(next_state)
-
-        # Convert transition dictionary values to sets
-        delta = {key: frozenset(value) for key, value in delta.items()}
-
-        initial_state = self.start_state  # Initial state
-        f = self.final_states  # Final states
-
-        # Create Automathon NFA
-        return AutomathonNFA(q, sigma, delta, initial_state, f)
-
     def visualize(self, filename="nfa_visualization"):
         dot = Digraph(format="png")
         
-        # Add states
         for state in self.states:
             if state in self.final_states:
-                dot.node(state, shape="doublecircle")  # Final states are double circles
+                dot.node(state, shape="doublecircle")
             else:
                 dot.node(state, shape="circle")
         
@@ -131,11 +93,7 @@ class NFA:
             for symbol, next_states in transitions.items():
                 for next_state in next_states:
                     dot.edge(state, next_state, label=symbol)
-        
-        # Mark the start state
-        dot.node("", shape="none")  # Invisible starting point
+        dot.node("", shape="none")
         dot.edge("", self.start_state)
-        
-        # Render the graph
         dot.render(filename, cleanup=True)
         print(f"Visualization saved to {filename}.png")
